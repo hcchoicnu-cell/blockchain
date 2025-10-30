@@ -1,117 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Solidity Compiler with solc wasm Loader</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 10px; }
-    textarea { width: 100%; height: 300px; font-family: monospace; font-size: 14px; }
-    button { margin-top: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    pre { background: #f4f4f4; padding: 15px; overflow-x: auto; white-space: pre-wrap; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Solidity Practice with Remix IDE and Code Explanation</title>
+<style>
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    font-family: Arial, sans-serif;
+  }
+  header {
+    padding: 10px;
+    background-color: #1e1e1e;
+    color: white;
+    text-align: center;
+    font-size: 22px;
+  }
+  #container {
+    display: flex;
+    height: calc(100% - 50px);
+  }
+  #explanation {
+    width: 40%;
+    box-sizing: border-box;
+    padding: 20px;
+    background-color: #f9f9f9;
+    overflow-y: auto;
+    border-right: 1px solid #ddd;
+  }
+  #explanation h2 {
+    margin-top: 0;
+  }
+  #codeArea {
+    width: 100%;
+    height: 300px;
+    font-family: monospace;
+    font-size: 14px;
+  }
+  #remixFrame {
+    flex-grow: 1;
+    border: none;
+  }
+  #copyBtn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+</style>
 </head>
 <body>
-  <h1>Solidity Compiler Practice (solc wasm latest)</h1>
-  <p>Write or paste Solidity code below and click Compile.</p>
-  <textarea id="sourceCode">
+<header>Solidity Practice with Remix IDE & Live Code Explanation</header>
+
+<div id="container">
+  <div id="explanation">
+    <h2>Simple Storage Contract Example</h2>
+    <p>
+      이 계약은 숫자 하나를 저장하고 불러오는 간단한 스마트 컨트랙트입니다.
+      <br>아래 코드를 편집하거나 복사해서 오른쪽 Remix IDE에 붙여넣어 컴파일하고 실행해보세요.
+    </p>
+    <textarea id="codeArea" spellcheck="false">
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 contract SimpleStorage {
-  uint256 private storedData;
+    uint256 private storedData;
 
-  function set(uint256 x) public {
-    storedData = x;
-  }
-
-  function get() public view returns (uint256) {
-    return storedData;
-  }
-}
-  </textarea>
-  <button id="compileBtn" disabled>Loading compiler...</button>
-  <h2>Compilation Output</h2>
-  <pre id="output"></pre>
-
-  <script src="https://binaries.soliditylang.org/wasm/soljson-latest.js"></script>
-  <script>
-    // solc 모듈이 로드 후 Module 객체는 window.Module에 삽입됨
-    // solc는 window.Module.solidity_compile_json 함수로 사용 가능
-
-    const compileBtn = document.getElementById('compileBtn');
-    const outputElem = document.getElementById('output');
-    const sourceElem = document.getElementById('sourceCode');
-
-    // solc wasm 모듈(즉 Module)이 초기화되는 시점에 해당 함수 실행
-    function waitForModuleInitialized() {
-      return new Promise((resolve) => {
-        if (window.Module && window.Module.ready) {
-          resolve(window.Module);
-        } else {
-          window.Module = window.Module || {};
-          const origInit = window.Module.onRuntimeInitialized;
-          window.Module.onRuntimeInitialized = function() {
-            if (origInit) origInit();
-            resolve(window.Module);
-          };
-        }
-      });
+    function set(uint256 x) public {
+        storedData = x;
     }
 
-    waitForModuleInitialized().then((ModuleInstance) => {
-      // 컴파일 버튼 활성화
-      compileBtn.disabled = false;
-      compileBtn.textContent = "Compile";
+    function get() public view returns (uint256) {
+        return storedData;
+    }
+}
+    </textarea>
+    <button id="copyBtn">Copy Code to Remix IDE</button>
+  </div>
+  <iframe id="remixFrame" src="https://remix.ethereum.org/#version=soljson-v0.8.20+commit.a1b79de6.js&optimize=false" title="Remix IDE"></iframe>
+</div>
 
-      compileBtn.addEventListener('click', () => {
-        outputElem.textContent = 'Compiling... please wait.';
-        const source = sourceElem.value;
+<script>
+  const copyBtn = document.getElementById('copyBtn');
+  const codeArea = document.getElementById('codeArea');
+  const remixFrame = document.getElementById('remixFrame');
 
-        try {
-          const input = {
-            language: 'Solidity',
-            sources: {
-              'Contract.sol': { content: source }
-            },
-            settings: {
-              outputSelection: {
-                '*': {
-                  '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode']
-                }
-              }
-            }
-          };
+  copyBtn.addEventListener('click', () => {
+    // Remix IDE iframe 내부 문서의 편집기는 보안 특성 때문에 직접 접근 불가. 
+    // 따라서 사용자가 손쉽게 복사&붙여넣기 하도록 클립보드 복사 기능 제공
 
-          // solidity_compile_json 함수 호출
-          const outputJSON = ModuleInstance.cwrap('solidity_compile_json', 'string', ['string'])(JSON.stringify(input));
-          const output = JSON.parse(outputJSON);
+    // 코드 복사 시도
+    codeArea.select();
+    document.execCommand('copy');
 
-          if (output.errors) {
-            const errors = output.errors.filter(e => e.severity === 'error');
-            if (errors.length > 0) {
-              outputElem.textContent =
-                errors.map(e => `Error:\n${e.formattedMessage}`).join('\n\n');
-              return;
-            }
-          }
+    alert('코드가 클립보드에 복사되었습니다.\n\nRemix IDE 편집기에 붙여넣기(Ctrl+V 또는 Command+V) 하세요.');
+  });
+</script>
 
-          let outputText = '';
-          for (const contractName in output.contracts['Contract.sol']) {
-            const contract = output.contracts['Contract.sol'][contractName];
-            outputText += `Contract: ${contractName}\n\n`;
-            outputText += 'ABI:\n' + JSON.stringify(contract.abi, null, 2) + '\n\n';
-            outputText += 'Bytecode:\n' + contract.evm.bytecode.object + '\n\n';
-            outputText +=
-              'Deployed Bytecode:\n' + contract.evm.deployedBytecode.object + '\n\n';
-          }
-          outputElem.textContent = outputText;
-
-        } catch (err) {
-          outputElem.textContent = 'Compilation error:\n' + (err.message || err);
-        }
-      });
-    });
-  </script>
 </body>
 </html>
