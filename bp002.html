@@ -3,105 +3,104 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Solidity Simple Compiler Practice</title>
+  <title>Solidity Compiler with soljson-latest.js</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 10px; }
     textarea { width: 100%; height: 300px; font-family: monospace; font-size: 14px; }
     button { margin-top: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
     pre { background: #f4f4f4; padding: 15px; overflow-x: auto; white-space: pre-wrap; }
-    h1, h2 { margin-bottom: 10px; }
   </style>
 </head>
 <body>
-  <h1>Solidity Simple Compiler Practice</h1>
-  <p>아래 코드를 작성(또는 붙여넣기)하고 Compile 버튼을 누르면 조립된 결과를 확인할 수 있습니다.</p>
+  <h1>Solidity Compiler Practice (soljson-latest.js)</h1>
+  <p>Write or paste Solidity code, then click Compile.</p>
+
   <textarea id="sourceCode">
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 contract SimpleStorage {
-    uint256 private storedData;
-    
-    function set(uint256 x) public {
-        storedData = x;
-    }
-    
-    function get() public view returns (uint256) {
-        return storedData;
-    }
+  uint256 private storedData;
+
+  function set(uint256 x) public {
+    storedData = x;
+  }
+
+  function get() public view returns (uint256) {
+    return storedData;
+  }
 }
   </textarea>
-  <button id="compileBtn">Compile</button>
-  <h2>Compile Output</h2>
+
+  <button id="compileBtn" disabled>Loading compiler...</button>
+  <h2>Compilation Output</h2>
   <pre id="output"></pre>
 
-  <!-- solc-js CDN -->
-  <script src="https://binaries.soliditylang.org/bin/soljson-latest.js"></script>
+  <script src="https://binaries.soliditylang.org/wasm/soljson-latest.js"></script>
   <script>
-    // solc global available after script load as 'Module' (loaded asm.js wasm module)
+    let solcReady = false;
+
+    // solc 모듈 초기화 후 버튼 활성화
+    Module.onRuntimeInitialized = () => {
+      solcReady = true;
+      document.getElementById('compileBtn').disabled = false;
+      document.getElementById('compileBtn').textContent = 'Compile';
+    };
+
+    const compileBtn = document.getElementById('compileBtn');
     const outputElem = document.getElementById('output');
     const sourceElem = document.getElementById('sourceCode');
-    const compileBtn = document.getElementById('compileBtn');
-
-    // Wrap solc compile
-    function compileSolidity(source) {
-      // Prepare input JSON per solc-js standard JSON I/O
-      const input = {
-        language: 'Solidity',
-        sources: {
-          'Contract.sol': { content: source }
-        },
-        settings: {
-          outputSelection: {
-            '*': {
-              '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode']
-            }
-          }
-        }
-      };
-
-      const inputJSON = JSON.stringify(input);
-      const outputJSON = Module.ccall(
-        'solidity_compile_json',
-        'string',
-        ['string'],
-        [inputJSON]
-      );
-      
-      return JSON.parse(outputJSON);
-    }
 
     compileBtn.addEventListener('click', () => {
-      outputElem.textContent = 'Compiling... 잠시만 기다려주세요.';
-      const sourceCode = sourceElem.value;
+      if (!solcReady) return;
+
+      outputElem.textContent = 'Compiling... please wait.';
+      const source = sourceElem.value;
 
       try {
-        const result = compileSolidity(sourceCode);
+        const input = {
+          language: 'Solidity',
+          sources: {
+            'Contract.sol': { content: source }
+          },
+          settings: {
+            outputSelection: {
+              '*': {
+                '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode']
+              }
+            }
+          }
+        };
 
-        if (result.errors) {
-          const errors = result.errors.filter(e => e.severity === 'error');
+        // solc.js 컴파일 함수 호출을 cwrap로 래핑해서 호출
+        const compileFunc = solc.cwrap('solidity_compile_json', 'string', ['string']);
+        const outputJSON = compileFunc(JSON.stringify(input));
+        const output = JSON.parse(outputJSON);
+
+        if (output.errors) {
+          const errors = output.errors.filter(e => e.severity === 'error');
           if (errors.length > 0) {
-            outputElem.textContent = errors.map(e => `Error: ${e.formattedMessage}`).join('\n\n');
+            outputElem.textContent =
+              errors.map(e => `Error: ${e.formattedMessage}`).join('\n\n');
             return;
           }
         }
 
-        // 성공 메시지 및 ABI, Bytecode 출력
-        const contracts = result.contracts['Contract.sol'];
-        let outputText = '';
-        for (const contractName in contracts) {
-          const contract = contracts[contractName];
-          outputText += `Contract: ${contractName}\n\n`;
-          outputText += 'ABI:\n' + JSON.stringify(contract.abi, null, 2) + '\n\n';
-          outputText += 'Bytecode (evm.bytecode.object):\n' + contract.evm.bytecode.object + '\n\n';
-          outputText += 'Deployed Bytecode (evm.deployedBytecode.object):\n' + contract.evm.deployedBytecode.object + '\n\n';
+        let textOutput = '';
+        for (const contractName in output.contracts['Contract.sol']) {
+          const contract = output.contracts['Contract.sol'][contractName];
+          textOutput += `Contract: ${contractName}\n\n`;
+          textOutput += 'ABI:\n' + JSON.stringify(contract.abi, null, 2) + '\n\n';
+          textOutput +=
+            'Bytecode:\n' + contract.evm.bytecode.object + '\n\n';
+          textOutput +=
+            'Deployed Bytecode:\n' + contract.evm.deployedBytecode.object + '\n\n';
         }
-        outputElem.textContent = outputText;
+        outputElem.textContent = textOutput;
 
       } catch (err) {
-        outputElem.textContent = '컴파일 중 오류가 발생했습니다:\n' + err.message;
+        outputElem.textContent = 'Compilation error: ' + err.message;
       }
-
     });
   </script>
 </body>
