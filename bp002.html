@@ -1,40 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>SHA-256 Hash Function Tester</title>
-<style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    input, button { font-size: 16px; padding: 8px; margin-top: 10px; width: 100%; max-width: 400px; }
-    #hashOutput { margin-top: 20px; padding: 10px; background: #f0f0f0; border: 1px solid #ccc; word-break: break-all; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Solidity Compiler with latest solc-js wasm</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 10px; }
+    textarea { width: 100%; height: 300px; font-family: monospace; font-size: 14px; }
+    button { margin-top: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    pre { background: #f4f4f4; padding: 15px; overflow-x: auto; white-space: pre-wrap; }
+  </style>
 </head>
 <body>
-<h1>SHA-256 Hash Function Tester</h1>
-<label for="inputText">Enter text to hash:</label>
-<input type="text" id="inputText" placeholder="Type something here..." />
-<button id="hashBtn">Compute SHA-256 Hash</button>
-<h2>Hash Output</h2>
-<div id="hashOutput">Hash will appear here</div>
+  <h1>Solidity Compiler Practice (solc-js WASM latest)</h1>
+  <p>Write or paste Solidity code, then click Compile.</p>
 
-<script>
-async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+  <textarea id="sourceCode">
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-document.getElementById('hashBtn').addEventListener('click', async () => {
-    const input = document.getElementById('inputText').value;
-    if(input === '') {
-        alert('Please enter some text to hash.');
-        return;
+contract SimpleStorage {
+    uint256 private storedData;
+    
+    function set(uint256 x) public {
+        storedData = x;
     }
-    const hash = await sha256(input);
-    document.getElementById('hashOutput').textContent = hash;
-});
-</script>
+    
+    function get() public view returns (uint256) {
+        return storedData;
+    }
+}
+  </textarea>
+
+  <button id="compileBtn" disabled>Loading compiler...</button>
+  <h2>Compilation Output</h2>
+  <pre id="output"></pre>
+
+  <script>
+    let solc;
+
+    // solc wasm script 로드 및 초기화
+    window.Module = {
+      onRuntimeInitialized: () => {
+        solc = window.Module;
+        document.getElementById('compileBtn').disabled = false;
+        document.getElementById('compileBtn').textContent = 'Compile';
+      }
+    };
+
+    // solc wasm 모듈 비동기 로드
+    const script = document.createElement('script');
+    script.src = 'https://binaries.soliditylang.org/wasm/soljson-latest.js';
+    document.head.appendChild(script);
+
+    const outputElem = document.getElementById('output');
+    const sourceElem = document.getElementById('sourceCode');
+    const compileBtn = document.getElementById('compileBtn');
+
+    compileBtn.addEventListener('click', () => {
+      outputElem.textContent = 'Compiling... please wait.';
+      const source = sourceElem.value;
+
+      try {
+        const input = {
+          language: 'Solidity',
+          sources: {
+            'Contract.sol': { content: source }
+          },
+          settings: {
+            outputSelection: {
+              '*': {
+                '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode']
+              }
+            }
+          }
+        };
+
+        const outputJSON = solc.cwrap('solidity_compile_json', 'string', ['string'])(JSON.stringify(input));
+        const output = JSON.parse(outputJSON);
+
+        if (output.errors) {
+          const errors = output.errors.filter(e => e.severity === 'error');
+          if (errors.length) {
+            outputElem.textContent = errors.map(e => e.formattedMessage).join('\n\n');
+            return;
+          }
+        }
+
+        let textOutput = '';
+        for (const contractName in output.contracts['Contract.sol']) {
+          const contract = output.contracts['Contract.sol'][contractName];
+          textOutput += `Contract: ${contractName}\n\n`;
+          textOutput += 'ABI:\n' + JSON.stringify(contract.abi, null, 2) + '\n\n';
+          textOutput += 'Bytecode:\n' + contract.evm.bytecode.object + '\n\n';
+          textOutput += 'Deployed Bytecode:\n' + contract.evm.deployedBytecode.object + '\n\n';
+        }
+        outputElem.textContent = textOutput;
+
+      } catch (error) {
+        outputElem.textContent = 'Compilation error: ' + error.message;
+      }
+    });
+  </script>
 </body>
 </html>
