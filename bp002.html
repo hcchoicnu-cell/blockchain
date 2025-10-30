@@ -3,62 +3,102 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Solidity Practice with Remix IDE and Code Explanation</title>
+<title>Remix IDE Beginner's Guide and Practice</title>
 <style>
   body, html {
     margin: 0; padding: 0; height: 100%;
     font-family: Arial, sans-serif;
   }
   header {
-    padding: 10px;
-    background-color: #1e1e1e;
+    background-color: #222;
     color: white;
+    padding: 12px 20px;
     text-align: center;
     font-size: 22px;
   }
   #container {
     display: flex;
-    height: calc(100% - 50px);
+    height: calc(100% - 60px);
   }
-  #explanation {
+  #sidebar {
     width: 40%;
-    box-sizing: border-box;
     padding: 20px;
+    box-sizing: border-box;
     background-color: #f9f9f9;
     overflow-y: auto;
-    border-right: 1px solid #ddd;
+    border-right: 1px solid #ccc;
   }
-  #explanation h2 {
+  #sidebar h2 {
     margin-top: 0;
+  }
+  #sidebar ol {
+    padding-left: 20px;
+  }
+  #sidebar li {
+    margin-bottom: 15px;
+    line-height: 1.4;
   }
   #codeArea {
     width: 100%;
-    height: 300px;
+    height: 250px;
     font-family: monospace;
     font-size: 14px;
+    margin-top: 10px;
+    resize: vertical;
+  }
+  #copyBtn {
+    margin-top: 12px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #1e88e5;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  #copyBtn:hover {
+    background-color: #1565c0;
   }
   #remixFrame {
     flex-grow: 1;
     border: none;
   }
-  #copyBtn {
-    margin-top: 10px;
-    padding: 8px 16px;
-    font-size: 15px;
-    cursor: pointer;
+  footer {
+    background-color: #222;
+    color: #ddd;
+    font-size: 13px;
+    text-align: center;
+    padding: 6px;
+    position: fixed;
+    bottom: 0; 
+    width: 100%;
   }
 </style>
 </head>
 <body>
-<header>Solidity Practice with Remix IDE & Live Code Explanation</header>
+<header>Beginner's Guide to Remix IDE & Solidity Practice</header>
 
 <div id="container">
-  <div id="explanation">
-    <h2>Simple Storage Contract Example</h2>
-    <p>
-      이 계약은 숫자 하나를 저장하고 불러오는 간단한 스마트 컨트랙트입니다.
-      <br>아래 코드를 편집하거나 복사해서 오른쪽 Remix IDE에 붙여넣어 컴파일하고 실행해보세요.
-    </p>
+  <div id="sidebar">
+    <h2>Remix IDE 사용법 단계별 안내</h2>
+    <ol>
+      <li><strong>Remix IDE 이해하기</strong>  
+        <br>Remix는 웹 기반 Solidity 통합 개발 환경(IDE)입니다. 별도 설치 없이 브라우저에서 스마트 컨트랙트를 작성, 컴파일, 배포, 디버깅 가능합니다.</li>
+      <li><strong>파일 만들기</strong>  
+        <br>오른쪽 Remix IDE 좌측 파일탭에서 <em>"+ New File"</em> 버튼을 눌러 새 Solidity 파일을 만듭니다.(예: <code>MyContract.sol</code>)</li>
+      <li><strong>Solidity 코드 붙여넣기</strong>  
+        <br>아래 예제 코드를 복사하여 새로 만든 파일에 붙여넣습니다.</li>
+      <li><strong>컴파일 하기</strong>  
+        <br>좌측 컴파일러 탭에서 Solidity 컴파일러 버전을 선택한 후, <em>"Compile MyContract.sol"</em> 버튼을 누릅니다.</li>
+      <li><strong>배포 및 실행</strong>  
+        <br>배포 탭에서 환경(Injected Web3 또는 JavaScript VM)을 선택하고 배포할 컨트랙트를 선택한 뒤 <em>"Deploy"</em> 버튼을 누릅니다. 배포된 함수들을 실행해 볼 수 있습니다.</li>
+      <li><strong>디버깅과 테스트</strong>  
+        <br>Remix는 내장된 디버거와 단위테스트 기능도 제공하므로, 차근차근 실습하며 학습할 수 있습니다.</li>
+      <li><strong>더 알아보기</strong>  
+        <br><a href="https://remix.ethereum.org" target="_blank">Remix 공식 사이트</a>와 <a href="https://soliditylang.org" target="_blank">Solidity 공식 문서</a>를 참조하세요.</li>
+    </ol>
+
+    <h2>Solidity 실습 예제</h2>
     <textarea id="codeArea" spellcheck="false">
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
@@ -77,23 +117,31 @@ contract SimpleStorage {
     </textarea>
     <button id="copyBtn">Copy Code to Remix IDE</button>
   </div>
-  <iframe id="remixFrame" src="https://remix.ethereum.org/#version=soljson-v0.8.20+commit.a1b79de6.js&optimize=false" title="Remix IDE"></iframe>
+  <iframe id="remixFrame" src="https://remix.ethereum.org/#version=soljson-v0.8.20+commit.a1b79de6.js" title="Remix IDE"></iframe>
 </div>
+
+<footer>
+  Web-based Solidity Practice Environment with Embedded Remix IDE
+</footer>
 
 <script>
   const copyBtn = document.getElementById('copyBtn');
   const codeArea = document.getElementById('codeArea');
-  const remixFrame = document.getElementById('remixFrame');
 
   copyBtn.addEventListener('click', () => {
-    // Remix IDE iframe 내부 문서의 편집기는 보안 특성 때문에 직접 접근 불가. 
-    // 따라서 사용자가 손쉽게 복사&붙여넣기 하도록 클립보드 복사 기능 제공
-
-    // 코드 복사 시도
     codeArea.select();
-    document.execCommand('copy');
+    codeArea.setSelectionRange(0, 99999); // 모바일용
 
-    alert('코드가 클립보드에 복사되었습니다.\n\nRemix IDE 편집기에 붙여넣기(Ctrl+V 또는 Command+V) 하세요.');
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        alert('코드가 클립보드에 복사되었습니다.\n\nRemix IDE 편집기에 붙여넣기(Ctrl+V 또는 Command+V) 하세요.');
+      } else {
+        alert('복사에 실패했습니다. 직접 전체 코드를 선택해서 복사하세요.');
+      }
+    } catch (err) {
+      alert('복사 도중 오류가 발생했습니다. 직접 복사해 주세요.');
+    }
   });
 </script>
 
