@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SHA-256 Hash Function Tester</title>
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button { font-size: 16px; padding: 8px; margin-top: 10px; width: 100%; max-width: 400px; }
+    #hashOutput { margin-top: 20px; padding: 10px; background: #f0f0f0; border: 1px solid #ccc; word-break: break-all; }
+</style>
+</head>
+<body>
+<h1>SHA-256 Hash Function Tester</h1>
+<label for="inputText">Enter text to hash:</label>
+<input type="text" id="inputText" placeholder="Type something here..." />
+<button id="hashBtn">Compute SHA-256 Hash</button>
+<h2>Hash Output</h2>
+<div id="hashOutput">Hash will appear here</div>
+
+<script>
+async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+document.getElementById('hashBtn').addEventListener('click', async () => {
+    const input = document.getElementById('inputText').value;
+    if(input === '') {
+        alert('Please enter some text to hash.');
+        return;
+    }
+    const hash = await sha256(input);
+    document.getElementById('hashOutput').textContent = hash;
+});
+</script>
+</body>
+</html>
