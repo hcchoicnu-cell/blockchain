@@ -1,118 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Blockchain Hashing Practical Training</title>
+<title>SHA-256 해시 함수 테스트</title>
 <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    button { margin: 10px 0; padding: 10px 20px; font-size: 16px; }
-    #chain { white-space: pre-wrap; background: #f4f4f4; padding: 15px; border: 1px solid #ddd; max-height: 400px; overflow-y: auto; }
+    input, label { font-size: 16px; padding: 8px; margin-top: 10px; width: 100%; max-width: 400px; }
+    #hashOutput { margin-top: 20px; padding: 10px; background: #f0f0f0; border: 1px solid #ccc; word-break: break-all; }
+    .row { margin-bottom: 10px; }
 </style>
 </head>
 <body>
-<h1>Blockchain Hashing Practical Training</h1>
-
-<button id="addBlockBtn">Add New Block</button>
-<button id="validateBtn">Validate Blockchain</button>
-
-<h2>Blockchain Data</h2>
-<div id="chain">Loading blockchain...</div>
-<h2>Status</h2>
-<div id="status"></div>
+<h1>SHA-256 해시 함수 테스트</h1>
+<div class="row">
+  <label for="inputText">입력값 :</label>
+  <input type="text" id="inputText" placeholder="여기에 메시지를 입력하세요" autocomplete="off" />
+</div>
+<div class="row">
+  <label for="nonceInput">Nonce 값 :</label>
+  <input type="number" id="nonceInput" value="0" min="0" />
+</div>
+<h2>해시 결과</h2>
+<div id="hashOutput">해시 값이 여기에 표시됩니다</div>
 
 <script>
-class Block {
-    constructor(index, timestamp, data, previousHash = '') {
-        this.index = index;
-        this.timestamp = timestamp;
-        this.data = data;
-        this.previousHash = previousHash;
-        this.nonce = 0;
-        this.hash = '';
-    }
-
-    async calculateHash() {
-        const msg = this.index + this.timestamp + JSON.stringify(this.data) + this.previousHash + this.nonce;
-        const msgBuffer = new TextEncoder().encode(msg);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    async mineBlock(difficulty) {
-        const target = '0'.repeat(difficulty);
-        do {
-            this.nonce++;
-            this.hash = await this.calculateHash();
-        } while(this.hash.substring(0, difficulty) !== target);
-        return this.hash;
-    }
+async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-class Blockchain {
-    constructor() {
-        this.chain = [];
-        this.difficulty = 3;
-        this.initChain();
-    }
-
-    async initChain() {
-        const genesisBlock = new Block(0, new Date().toISOString(), "Genesis Block", "0");
-        await genesisBlock.mineBlock(this.difficulty);
-        this.chain.push(genesisBlock);
-        this.displayChain();
-    }
-
-    getLatestBlock() {
-        return this.chain[this.chain.length - 1];
-    }
-
-    async addBlock(newData) {
-        const newIndex = this.chain.length;
-        const newBlock = new Block(newIndex, new Date().toISOString(), newData, this.getLatestBlock().hash);
-        await newBlock.mineBlock(this.difficulty);
-        this.chain.push(newBlock);
-        this.displayChain();
-    }
-
-    async isChainValid() {
-        for(let i = 1; i < this.chain.length; i++) {
-            const currentBlock = this.chain[i];
-            const previousBlock = this.chain[i - 1];
-            const calculatedHash = await currentBlock.calculateHash();
-
-            if(currentBlock.hash !== calculatedHash) {
-                return false;
-            }
-            if(currentBlock.previousHash !== previousBlock.hash) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    displayChain() {
-        const chainDiv = document.getElementById('chain');
-        chainDiv.textContent = JSON.stringify(this.chain, null, 4);
-    }
+async function updateHash() {
+    const input = document.getElementById('inputText').value;
+    const nonce = document.getElementById('nonceInput').value;
+    const combined = input + nonce;
+    const hash = await sha256(combined);
+    document.getElementById('hashOutput').textContent = hash;
 }
 
-const blockchain = new Blockchain();
+// 입력이 바뀔 때마다 해시 갱신
+document.getElementById('inputText').addEventListener('input', updateHash);
+document.getElementById('nonceInput').addEventListener('input', updateHash);
 
-document.getElementById('addBlockBtn').addEventListener('click', async () => {
-    const amount = prompt("Enter some data for the block (e.g. amount):", "10");
-    if(amount != null) {
-        await blockchain.addBlock({ amount: amount });
-        document.getElementById('status').textContent = 'New block added and mined.';
-    }
-});
-
-document.getElementById('validateBtn').addEventListener('click', async () => {
-    const valid = await blockchain.isChainValid();
-    document.getElementById('status').textContent = valid ? 'Blockchain is valid.' : 'Blockchain has been tampered!';
-});
+// 페이지 로드시 해시 초기화
+window.addEventListener('DOMContentLoaded', updateHash);
 </script>
-
 </body>
 </html>
